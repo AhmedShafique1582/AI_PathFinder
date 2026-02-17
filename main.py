@@ -73,6 +73,7 @@ def bfs(start, target):
 
         current = queue.popleft()
 
+        # animation
         if current != start and current != target:
             rect = pygame.Rect(current[1]*CELL_SIZE, current[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(screen, LIGHTBLUE, rect)
@@ -111,6 +112,7 @@ def dfs(start, target):
 
         current = stack.pop()
 
+        # animation
         if current != start and current != target:
             rect = pygame.Rect(current[1]*CELL_SIZE, current[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE)
             pygame.draw.rect(screen, LIGHTBLUE, rect)
@@ -149,6 +151,7 @@ def dls(start, target, limit):
 
         current, depth = stack.pop()
 
+        # animation
         if current != start and current != target:
             rect = pygame.Rect(
                 current[1]*CELL_SIZE,
@@ -203,6 +206,136 @@ def iddfs(start, target,max_depth):
                 return result
         return None
 
+#BIDIRECTIONAL
+def bidirectional(start, target):
+    from collections import deque
+
+    q1 = deque([start])
+    q2 = deque([target])
+
+    visited1 = {start: None}
+    visited2 = {target: None}
+
+    while q1 and q2:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # start side
+        cur1 = q1.popleft()
+        # animation
+        if cur1 != start and cur1 != target:
+            rect = pygame.Rect(cur1[1] * CELL_SIZE, cur1[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, LIGHTBLUE, rect)
+            pygame.display.flip()
+            pygame.time.delay(60)
+
+        if cur1 in visited2:
+            path = []
+            node = cur1
+            while node:
+                path.append(node)
+                node = visited1[node]
+            path.reverse()
+
+            node = visited2[cur1]
+            while node:
+                path.append(node)
+                node = visited2[node]
+            return path
+
+        r, c = cur1
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),(1, 1), (-1, -1), (1, -1), (-1, 1)]
+        for dr, dc in directions:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < ROWS and 0 <= nc < COLS and grid[nr][nc]==0 and (nr,nc) not in visited1:
+                visited1[(nr,nc)] = cur1
+                q1.append((nr,nc))
+
+        # target side
+        cur2 = q2.popleft()
+        # animation
+        if cur2 != start and cur2 != target:
+            rect = pygame.Rect(cur2[1] * CELL_SIZE, cur2[0] * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, LIGHTBLUE, rect)
+            pygame.display.flip()
+            pygame.time.delay(60)
+
+        if cur2 in visited1:
+            path = []
+            node = cur2
+            while node:
+                path.append(node)
+                node = visited1[node]
+            path.reverse()
+
+            node = visited2[cur2]
+            while node:
+                path.append(node)
+                node = visited2[node]
+            return path
+
+        r, c = cur2
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),
+            (1, 1), (-1, -1), (1, -1), (-1, 1)
+        ]
+        for dr, dc in directions:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < ROWS and 0 <= nc < COLS and grid[nr][nc]==0 and (nr,nc) not in visited2:
+                visited2[(nr,nc)] = cur2
+                q2.append((nr,nc))
+
+    return None
+
+def ucs(start, target):
+    import heapq
+
+    pq = [(0, start)]
+    visited = {start: None}
+    cost = {start: 0}
+
+    while pq:
+        cur_cost, cur = heapq.heappop(pq)
+        node = cur
+
+        # animation
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        if node != start and node != target:
+            rect = pygame.Rect(node[1]*CELL_SIZE, node[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, LIGHTBLUE, rect)
+            pygame.display.flip()
+            pygame.time.delay(60)
+
+        if cur == target:
+            path = []
+            while cur:
+                path.append(cur)
+                cur = visited[cur]
+            path.reverse()
+            return path
+
+        r, c = node
+        directions = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),
+            (1, 1), (-1, -1), (1, -1), (-1, 1)
+        ]
+        for dr, dc in directions:
+            nr, nc = r+dr, c+dc
+            if 0 <= nr < ROWS and 0 <= nc < COLS and grid[nr][nc]==0:
+                new_cost = cur_cost + 1
+                if (nr,nc) not in cost or new_cost < cost[(nr,nc)]:
+                    cost[(nr,nc)] = new_cost
+                    visited[(nr,nc)] = node
+                    heapq.heappush(pq, (new_cost, (nr,nc)))
+
+    return None
+
 
 # MAIN LOOP
 running = True
@@ -221,5 +354,9 @@ while running:
     clock.tick(60)
 
     if not path_found:
-        path = iddfs(start, target,400)
-        path_found = True
+         path = bfs(start, target)
+        # path = dfs(start, target)
+        # path = iddfs(start, target, max_depth=40)
+        # path = bidirectional(start, target)
+        # path = ucs(start, target)
+    path_found = True
