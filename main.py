@@ -16,7 +16,7 @@ GREEN = (0, 200, 0)
 RED = (200, 0, 0)
 GRAY = (180, 180, 180)
 LIGHTBLUE = (150,150,255)
-BLUE = (0,0,255)  # final path color
+BLUE = (0,0,255)
 
 # INIT
 pygame.init()
@@ -58,7 +58,7 @@ def draw_grid(path=[]):
                 pygame.draw.rect(screen, WHITE, rect)
             pygame.draw.rect(screen, GRAY, rect, 1)
 
-# BFS function with animation
+# BFS
 def bfs(start, target):
     from collections import deque
     queue = deque([start])
@@ -96,6 +96,114 @@ def bfs(start, target):
                 queue.append((r,c))
                 visited[(r,c)] = current
 
+# DFS
+def dfs(start, target):
+    from collections import deque
+    stack = deque([start])
+    visited = {start: None}
+    path = []
+
+    while stack:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        current = stack.pop()
+
+        if current != start and current != target:
+            rect = pygame.Rect(current[1]*CELL_SIZE, current[0]*CELL_SIZE, CELL_SIZE, CELL_SIZE)
+            pygame.draw.rect(screen, LIGHTBLUE, rect)
+            pygame.display.flip()
+            pygame.time.delay(60)
+
+        if current == target:
+            # reconstruct path
+            node = target
+            while node:
+                path.append(node)
+                node = visited[node]
+            path.reverse()
+            return path
+
+        row, col = current
+        directions = [(-1,0),(1,0),(0,-1),(0,1),(1,1),(-1,-1),(1,-1),(-1,1)]
+        for dr, dc in directions:
+            r, c = row+dr, col+dc
+            if 0 <= r < ROWS and 0 <= c < COLS and grid[r][c]==0 and (r,c) not in visited:
+                stack.append((r,c))
+                visited[(r,c)] = current
+
+# DLS
+def dls(start, target, limit):
+    from collections import deque
+    stack = deque([(start, 0)])
+    visited = {start: None}
+    path = []
+
+    while stack:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        current, depth = stack.pop()
+
+        if current != start and current != target:
+            rect = pygame.Rect(
+                current[1]*CELL_SIZE,
+                current[0]*CELL_SIZE,
+                CELL_SIZE,
+                CELL_SIZE
+            )
+            pygame.draw.rect(screen, LIGHTBLUE, rect)
+            pygame.display.flip()
+            pygame.time.delay(60)
+
+        if current == target:
+            node = target
+            while node:
+                path.append(node)
+                node = visited[node]
+            path.reverse()
+            return path
+
+        if depth == limit:
+            continue
+
+        row, col = current
+        directions = [
+            (-1,0),(1,0),(0,-1),(0,1),
+            (1,1),(-1,-1),(1,-1),(-1,1)
+        ]
+
+        for dr, dc in directions:
+            r, c = row + dr, col + dc
+            if (
+                0 <= r < ROWS and
+                0 <= c < COLS and
+                grid[r][c] == 0 and
+                (r, c) not in visited
+            ):
+                stack.append(((r, c), depth + 1))
+                visited[(r, c)] = current
+
+    return None
+
+#IDDFS
+def iddfs(start, target,max_depth):
+        for limit in range(max_depth + 1):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            result = dls(start, target, limit)
+            if result is not None:
+                return result
+        return None
+
+
 # MAIN LOOP
 running = True
 path_found = False
@@ -113,5 +221,5 @@ while running:
     clock.tick(60)
 
     if not path_found:
-        path = bfs(start, target)
+        path = iddfs(start, target,400)
         path_found = True
